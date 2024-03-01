@@ -235,7 +235,7 @@ void q_reverse(struct list_head *head)
 /* Reverse the nodes of the list k at a time */
 void q_reverseK(struct list_head *head, int k)
 {
-    return 0;
+    return;
 }
 
 
