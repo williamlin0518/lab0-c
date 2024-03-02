@@ -101,7 +101,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
     element_t *element = list_entry(last, element_t, list);
 
     // Copy string to provided buffer
-    if (sp && bufsize) {
+    if (sp) {
         strncpy(sp, element->value, bufsize - 1);
         sp[bufsize - 1] = '\0';
     }
@@ -131,15 +131,15 @@ bool q_delete_mid(struct list_head *head)
     if (!head || list_empty(head))
         return false;
 
-    struct list_head *fast = head->next, *slow = head->next;
-    while (fast != head && fast->next != head) {
-        fast = fast->next->next;
-        slow = slow->next;
+    struct list_head *forward = head->next;
+    struct list_head *backward = head->prev;
+    while (forward != backward && forward->prev != backward) {
+        forward = forward->next;
+        backward = backward->prev;
     }
 
-    // 'slow' should now point to the middle element
-    list_del(slow);
-    element_t *element = list_entry(slow, element_t, list);
+    list_del(forward);
+    element_t *element = list_entry(forward, element_t, list);
     free(element->value);
     free(element);
 
@@ -150,69 +150,52 @@ bool q_delete_mid(struct list_head *head)
 bool q_delete_dup(struct list_head *head)
 {
     if (!head || list_empty(head) || list_is_singular(head)) {
-        // Empty list or only one element, no duplicates possible.
         return false;
     }
+    element_t *current_element, *next_element;
+    list_for_each_entry_safe (current_element, next_element, head, list) {
+        bool is_duplicate = false;
 
-    bool removed = false;
-    struct list_head *current = head->next;
-    while (current != head && current->next != head) {
-        element_t *current_elem = list_entry(current, element_t, list);
-        element_t *next_elem = list_entry(current->next, element_t, list);
-
-        if (strcmp(current_elem->value, next_elem->value) == 0) {
-            // Duplicate found, remove current and all duplicates.
-            removed = true;
-            struct list_head *dup = current;
-            while (dup != head &&
-                   strcmp(current_elem->value, next_elem->value) == 0) {
-                struct list_head *next_dup = dup->next;
-                list_del(dup);
-                q_release_element(list_entry(dup, element_t, list));
-                dup = next_dup;
-                if (dup != head) {
-                    next_elem = list_entry(dup, element_t, list);
-                }
-            }
-            current = dup;  // Continue checking from the next distinct element.
-        } else {
-            current =
-                current->next;  // Move to the next element if not a duplicate.
+        // Keep removing next elements as long as they are duplicates
+        while (&next_element->list != head &&
+               !strcmp(current_element->value, next_element->value)) {
+            list_del(&next_element->list);
+            free(next_element->value);
+            free(next_element);
+            is_duplicate = true;
+            next_element =
+                list_entry(current_element->list.next, element_t, list);
+        }
+        // If the current element was part of a duplicate sequence, remove it as
+        // well
+        if (is_duplicate) {
+            list_del(&current_element->list);
+            free(current_element->value);
+            free(current_element);
         }
     }
-
-    return removed;
+    return true;
 }
 
 /* Swap every two adjacent nodes */
 void q_swap(struct list_head *head)
 {
-    // Ensure the list is not empty or has only one element.
-    if (head == NULL || head->next == head || head->next->next == head)
+    if (head == NULL || list_empty(head)) {
         return;
+    }
+    struct list_head *first = head->next;
+    while (first != head && first->next != head) {
+        struct list_head *second = first->next;  // The node to swap with.
 
-    struct list_head *current = head->next;
-    while (current != head && current->next != head) {
-        struct list_head *next = current->next;
-        struct list_head *nextnext = next->next;
+        // Remove 'second' from its current position.
+        list_del(first);
 
-        // Swap current and next nodes
-        next->next = current;
-        current->next = nextnext;
-        nextnext->prev = current;
+        // Insert 'first' after 'second '
+        list_add(first, second);
 
-        // Fix the previous pointers
-        if (current == head->next) {  // This is the first pair, adjust the head
-            head->next = next;
-            next->prev = head;
-        } else {  // Not the first pair
-            current->prev->next = next;
-            next->prev = current->prev;
-        }
-        current->prev = next;
 
-        // Move to the next pair
-        current = nextnext;
+        // since 'first' is now after 'second'.
+        first = first->next;
     }
 }
 
