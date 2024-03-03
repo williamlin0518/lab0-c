@@ -216,37 +216,28 @@ void q_reverse(struct list_head *head)
 }
 
 /* Reverse the nodes of the list k at a time */
+
+
 void q_reverseK(struct list_head *head, int k)
 {
     if (!head || list_empty(head) || k < 2) {
         return;
     }
-    struct list_head temp_list;  // Temporary list
-    INIT_LIST_HEAD(&temp_list);  // Init temporary list
-
-    struct list_head *tail = head;
-    while (tail->next != head) {
-        struct list_head *cut_point = tail;
-        for (int i = 0; i < k && cut_point->next != head; i++) {
-            cut_point = cut_point->next;
+    int count = 0;
+    struct list_head *cut_point, *safe, *start = head;
+    struct list_head temp_list;
+    INIT_LIST_HEAD(&temp_list);
+    list_for_each_safe (cut_point, safe, head) {
+        count++;
+        if (count == k) {
+            list_cut_position(&temp_list, start, cut_point);
+            q_reverse(&temp_list);
+            list_splice_init(&temp_list, start);
+            count = 0;
+            start = safe->prev;
         }
-        if (cut_point == tail) {
-            break;  // Less than k elements left, no more reversing
-        }
-        struct list_head *next_segment_start =
-            cut_point->next;  // Store the start of the next segment.
-        list_cut_position(&temp_list, tail, cut_point);
-
-        // Optionally reverse the segment in temp_list here
-        q_reverse(&temp_list);
-
-        // Splice the reversed segment back into the main list
-        list_splice_init(&temp_list, tail);
-
-        // Advance tail for the next iteration, skipping over the reversed
-        // segment
-        tail = next_segment_start;
     }
+    return;
 }
 
 
@@ -323,6 +314,8 @@ int q_ascend(struct list_head *head)
 
         if (strcmp(entry->value, min_value) > 0) {
             list_del(node);
+            free(entry->value);
+            free(entry);
 
         } else {
             min_value = entry->value;
@@ -355,6 +348,8 @@ int q_descend(struct list_head *head)
 
         if (strcmp(entry->value, max_value) < 0) {
             list_del(node);
+            free(entry->value);
+            free(entry);
 
         } else {
             max_value = entry->value;
@@ -370,7 +365,8 @@ int q_descend(struct list_head *head)
 int q_merge(struct list_head *head, bool descend)
 {
     if (list_empty(head) || list_is_singular(head)) {
-        return 0;
+        return 0;  // No action needed if the list is empty or has only one
+                   // node.
     }
 
     queue_contex_t *container, *tmp_container;
