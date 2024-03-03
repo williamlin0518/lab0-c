@@ -366,39 +366,41 @@ int q_merge(struct list_head *head, bool descend)
 {
     if (list_empty(head) || list_is_singular(head)) {
         return 0;  // No action needed if the list is empty or has only one
-                   // node.
+                   // element.
     }
+    queue_contex_t *first_qctx = list_first_entry(head, queue_contex_t, chain);
 
-    queue_contex_t *container, *tmp_container;
-    LIST_HEAD(merged);  // Initialize an empty list to hold the merged result.
+    // Prepare a temporary list for iterative merging.
+    struct list_head new_head;
+    INIT_LIST_HEAD(&new_head);
+    struct list_head merged;
+    INIT_LIST_HEAD(&merged);
 
-    // Iterate through the queue containers safely.
-    list_for_each_entry_safe (container, tmp_container, head, chain) {
-        if (!list_empty(&merged)) {
-            // If 'merged' is not empty, merge 'container->q' into 'merged'.
-            struct list_head temp;
-            INIT_LIST_HEAD(&temp);
-            list_splice_init(
-                container->q,
-                &temp);  // Move elements from 'container->q' to 'temp'.
-            merge(&merged, &merged, &temp,
-                  descend);  // Merge 'temp' into 'merged'.
-        } else {
-            // Otherwise, just initialize 'merged' with 'container->q'.
-            list_splice_init(
-                container->q,
-                &merged);  // Initialize 'merged' with 'container->q'.
-        }
+    queue_contex_t *entry, *safe;
+
+    // Start with merging into the first queue.
+    list_splice_init(first_qctx->q, &merged);
+
+    // Iterate through the remaining queue contexts for merging.
+    list_for_each_entry_safe (entry, safe, head, chain) {
+        if (entry == first_qctx)
+            continue;  // Skip the first queue context as it's already included.
+
+        // Use the merge function to combine the current queue with the merged
+        // results.
+        struct list_head temp;
+        INIT_LIST_HEAD(&temp);
+        list_splice_init(entry->q, &temp);  // Prepare the current queue.
+        printf("Merging %d\n", q_size(&temp));
+        merge(&new_head, &merged, &temp, descend);
+        INIT_LIST_HEAD(&merged);
+        list_splice_init(&new_head, &merged);
     }
-
-    // After merging, move the merged list back to the first queue's head for
-    // the result.
-    if (!list_empty(head)) {
-        queue_contex_t *first_container =
-            list_first_entry(head, queue_contex_t, chain);
-        list_splice(&merged, first_container->q);  // Move merged result back to
-                                                   // the first queue's head.
-    }
-
-    return 0;
+    // After merging all, move the merged results back to the first queue's
+    // head.
+    list_splice(&merged, first_qctx->q);
+    // Optionally, calculate and return the size of the merged queue.
+    return q_size(
+        first_qctx
+            ->q);  // Assuming q_size calculates the total number of elements.
 }
