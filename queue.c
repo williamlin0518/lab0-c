@@ -1,9 +1,21 @@
 #include "queue.h"
 #include <limits.h>
+#include <linux/kernel.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 /* Create an empty queue */
+
+struct list_head;
+#ifndef _LINUX_LIST_SORT_H
+#define _LINUX_LIST_SORT_H
+typedef int (*list_cmp_func_t)(void *,
+                               const struct list_head *,
+                               const struct list_head *);
+
+void list_sort(void *priv, struct list_head *head, list_cmp_func_t cmp);
+
+#endif
+
 struct list_head *q_new()
 {
     struct list_head *head = malloc(sizeof(struct list_head));
@@ -391,16 +403,11 @@ int q_merge(struct list_head *head, bool descend)
         struct list_head temp;
         INIT_LIST_HEAD(&temp);
         list_splice_init(entry->q, &temp);  // Prepare the current queue.
-        printf("Merging %d\n", q_size(&temp));
         merge(&new_head, &merged, &temp, descend);
         INIT_LIST_HEAD(&merged);
         list_splice_init(&new_head, &merged);
     }
-    // After merging all, move the merged results back to the first queue's
-    // head.
     list_splice(&merged, first_qctx->q);
-    // Optionally, calculate and return the size of the merged queue.
-    return q_size(
-        first_qctx
-            ->q);  // Assuming q_size calculates the total number of elements.
+
+    return q_size(first_qctx->q);
 }
