@@ -162,7 +162,6 @@ static bool doit(int mode)
     }
 
     prepare_inputs(input_data, classes);
-
     bool ret = measure(before_ticks, after_ticks, input_data, mode);
     differentiate(exec_times, before_ticks, after_ticks);
     bool first_time = t->percentiles[DUDECT_NUMBER_PERCENTILES - 1] == 0;
