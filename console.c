@@ -412,7 +412,11 @@ static bool do_web(int argc, char *argv[])
     }
     return true;
 }
-
+static bool do_ttt(int argc, char *argv[])
+{
+    printf("in console game");
+    return true;
+}
 /* Initialize interpreter */
 void init_cmd()
 {
@@ -436,7 +440,7 @@ void init_cmd()
     add_param("error", &err_limit, "Number of errors until exit", NULL);
     add_param("echo", &echo, "Do/don't echo commands", NULL);
     add_param("entropy", &show_entropy, "Show/Hide Shannon entropy", NULL);
-
+    ADD_COMMAND(ttt, "Do tic-tac-toe game in console", "");
     init_in();
     init_time(&last_time);
     first_time = last_time;

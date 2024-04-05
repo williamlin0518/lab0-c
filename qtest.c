@@ -1025,6 +1025,11 @@ static bool do_next(int argc, char *argv[])
     return q_show(0);
 }
 
+// static bool do_ttt(int argc, char *argv[])
+// {
+//     printf("in game");
+//     return true;
+// }
 static void console_init()
 {
     ADD_COMMAND(new, "Create new queue", "");
@@ -1065,6 +1070,7 @@ static void console_init()
                 "");
     ADD_COMMAND(reverseK, "Reverse the nodes of the queue 'K' at a time",
                 "[K]");
+
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
@@ -1074,7 +1080,6 @@ static void console_init()
     add_param("descend", &descend,
               "Sort and merge queue in ascending/descending order", NULL);
 }
-
 /* Signal handlers */
 static void sigsegv_handler(int sig)
 {
